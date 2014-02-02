@@ -1,0 +1,3 @@
+<launch>
+    <node pkg="simplePic" type="picViewy.py" name="picTFlistener" />
+</launch>
