@@ -22,26 +22,51 @@
 
 // the sensor communicates using SPI, so include the library:
 #include <SPI.h>
+#include <ros.h>
+#include <std_msgs/UInt8.h>
+
+ros::NodeHandle  nh;
+
+void sendByte(byte val){
+  digitalWrite(8, LOW);
+  SPI.transfer(val);
+  digitalWrite(8, HIGH);
+}
+
+void sendDMX(byte cmd, byte val){
+  sendByte(0xFF);
+  sendByte(cmd);
+  sendByte(val);
+}
+
+void tiltCb( const std_msgs::UInt8& tilt_msg){
+  digitalWrite(13, HIGH-digitalRead(13));   // blink the led
+  sendDMX(0x0A, tilt_msg.data);
+}
+
+void panCb( const std_msgs::UInt8& pan_msg){
+  digitalWrite(13, HIGH-digitalRead(13));   // blink the led
+  sendDMX(0x09, pan_msg.data);
+}
+
+ros::Subscriber<std_msgs::UInt8> subt("tilt", &tiltCb );
+ros::Subscriber<std_msgs::UInt8> subp("pan", &panCb );
 
 void setup() {
   pinMode(8, OUTPUT);
   digitalWrite(8, HIGH);
-  Serial.begin(57600);
+  //Serial.begin(57600);
+  nh.initNode();
+  nh.subscribe(subp);
+  nh.subscribe(subt);
 
   // start the SPI library:
   SPI.begin();
 
-  delay(100);
 }
 
 void loop() {
 
-  if(Serial.available()){
-    byte incomingByte = Serial.read();
-    Serial.print("Sending:  ");
-    Serial.println(incomingByte);
-    digitalWrite(8, LOW);
-    SPI.transfer(incomingByte);
-    digitalWrite(8, HIGH); 
-  }
+  nh.spinOnce();
+  delay(1);
 }
